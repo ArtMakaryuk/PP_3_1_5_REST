@@ -7,7 +7,7 @@
 </head>
 <body>
 
-<form th:method="post" th:action="@{/users}" th:object="${user}">
+<form th:method="post" th:action="@{/admin/users}" th:object="${user}" th:style="max-width: 600px; margin: 0 auto;">
     <label for="username">Username</label>
     <input type="text" th:field="*{username}" id="username"/>
 
@@ -32,9 +32,13 @@
     <input th:field="*{email}" type="text" id="email"/>
 
     </br>
+    <label for="role">Roles: </label>
+    <th:block th:each="role: ${roles}">
+        <input type="checkbox" th:field="*{roles}" th:text="${role.name}" th:value="${role.id}" id="role"/>
+    </th:block>
 
     <input type="submit" value="Add User"/>
 </form>
-
+<a th:href="@{/logout}">Logout</a>
 </body>
 </html>
