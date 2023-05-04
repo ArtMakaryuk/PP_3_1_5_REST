@@ -1,26 +1,35 @@
 package ru.kata.spring.boot_security.demo.services;
 
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.kata.spring.boot_security.demo.dao.UserDao;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
+
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class UserServiceImpl implements UserService{
+
+public class UserServiceImpl implements UserService {
 
     private final UserDao userDao;
+//    private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserDao userDao) {
         this.userDao = userDao;
+//        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -34,6 +43,7 @@ public class UserServiceImpl implements UserService{
     public List<User> findAll() {
         return userDao.findAll();
     }
+
 
     @Transactional
     @Override
@@ -59,18 +69,5 @@ public class UserServiceImpl implements UserService{
         return userDao.findByUsername(username);
     }
 
-    @Transactional
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException(String.format("User '%s' not found", username));
-        }
-        return new org.springframework.security.core.userdetails.User(user.getUsername(), user.getPassword(),
-                mapRolesToAuthorities(user.getRoles()));
-    }
 
-    private Collection<? extends GrantedAuthority> mapRolesToAuthorities(Collection<Role> roles) {
-        return roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());
-    }
 }
