@@ -4,16 +4,12 @@ import ru.kata.spring.boot_security.demo.model.Role;
 
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public interface RoleDao {
     List<Role> findAll();
 
-    void saveRole(Role role);
+    Role findRoleByAuthority(String authority) throws NoSuchElementException;
 
-    void deleteById(Long id);
-
-    Role findById(Long id);
-
-    void editRole(Role role);
-
+    Role getById(Long id);
 }

@@ -1,34 +1,27 @@
 package ru.kata.spring.boot_security.demo.services;
 
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.kata.spring.boot_security.demo.configs.PasswordConfig;
 import ru.kata.spring.boot_security.demo.dao.UserDao;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 
 public class UserServiceImpl implements UserService {
 
+    private final RoleService roleService;
     private final UserDao userDao;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserDao userDao, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(RoleService roleService, UserDao userDao, PasswordEncoder passwordEncoder) {
+        this.roleService = roleService;
         this.userDao = userDao;
         this.passwordEncoder = passwordEncoder;
     }
@@ -48,7 +41,8 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public void saveUser(User user) {
+    public void saveUser(User user, Long[] roles) {
+        addRole(user, roles);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userDao.saveUser(user);
     }
@@ -61,16 +55,19 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public void editUser(User user) {
+    public void editUser(User user, Long[] roles) {
+        addRole(user, roles);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userDao.saveUser(user);
+        userDao.editUser(user);
     }
 
-    @Transactional
-    @Override
-    public User findByUsername(String username) {
-        return userDao.findByUsername(username);
+    private Set<Role> addRole(User user, Long[] roles) {
+        Set<Role> set = new HashSet<>();
+        for (Long role : roles) {
+            set.add(roleService.getById(role));
+        }
+        user.setRoles(set);
+        return set;
     }
-
 
 }

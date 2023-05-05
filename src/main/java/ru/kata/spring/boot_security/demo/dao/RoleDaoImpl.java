@@ -4,11 +4,11 @@ import org.springframework.stereotype.Repository;
 import ru.kata.spring.boot_security.demo.model.Role;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Repository
-public class RoleDaoImpl implements RoleDao{
+public class RoleDaoImpl implements RoleDao {
 
     @PersistenceContext
     private EntityManager em;
@@ -19,26 +19,16 @@ public class RoleDaoImpl implements RoleDao{
     }
 
     @Override
-    public void saveRole(Role role) {
-        em.persist(role);
+    public Role findRoleByAuthority(String authority) throws NoSuchElementException {
+        return findAll().stream()
+                .filter(r -> authority.equals(r.getAuthority()))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException(String.format("Role %s not found", authority)));
     }
 
     @Override
-    public void deleteById(Long id) {
-        Role role = findById(id);
-        em.remove(role);
+    public Role getById(Long id) {
+        return em.find(Role.class, id);
     }
-
-    @Override
-    public Role findById(Long id) {
-        TypedQuery<Role> query = em.createQuery("select r from Role r where r.id = :id", Role.class);
-        query.setParameter("id", id);
-        return query.getSingleResult();
-    }
-
-    @Override
-    public void editRole(Role role) {
-        em.merge(role);
-    }
-
 }
+
