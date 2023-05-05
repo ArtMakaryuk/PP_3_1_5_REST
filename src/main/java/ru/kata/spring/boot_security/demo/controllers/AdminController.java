@@ -52,7 +52,7 @@ public class AdminController {
     @PostMapping()
     public String create(@ModelAttribute("user") User user) {
         userService.saveUser(user);
-        return "redirect:/";
+        return "redirect:/admin/users";
     }
 
     @GetMapping("/users/edit/{id}")
