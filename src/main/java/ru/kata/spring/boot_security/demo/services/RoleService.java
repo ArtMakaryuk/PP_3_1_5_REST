@@ -8,6 +8,6 @@ public interface RoleService {
 
     List<Role> findAll();
 
-    Role getById(Long id);
+    Role getById(Integer id);
 
 }

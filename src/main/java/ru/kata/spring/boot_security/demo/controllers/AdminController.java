@@ -1,20 +1,26 @@
 package ru.kata.spring.boot_security.demo.controllers;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.services.RoleService;
 import ru.kata.spring.boot_security.demo.services.UserService;
 
+import javax.validation.Valid;
 import java.util.List;
-
 
 
 @Controller
@@ -31,53 +37,50 @@ public class AdminController {
         this.roleService = roleService;
     }
 
-    @GetMapping()
-    public String adminPage() {
-        return "admin";
-    }
-
-    @GetMapping("/users")
+    @GetMapping({"", "list"})
     public String displayAllUsers(Model model) {
         model.addAttribute("users", userService.findAll());
-        return "users";
+        model.addAttribute("allRoles", roleService.findAll());
+
+        model.addAttribute("showUserProfile",
+                model.containsAttribute("user") && !((User) model.getAttribute("user")).isNew());
+        model.addAttribute("showNewUserForm",
+                model.containsAttribute("user") && ((User) model.getAttribute("user")).isNew());
+        if (!model.containsAttribute("user")) {
+            model.addAttribute("user", new User());
+        }
+
+        return "admin-page";
     }
 
-    @GetMapping("/users/new")
-    public String newUser(Model model) {
-        model.addAttribute("user", new User());
-        List<Role> roles = roleService.findAll();
-        model.addAttribute("allRoles", roles);
-        return "new";
+    @GetMapping("/{id}/profile")
+    public String showUserProfileModal(@PathVariable("id") Long userId, Model model) {
+        try {
+            model.addAttribute("allRoles", roleService.findAll());
+            model.addAttribute("user", userService.findById(userId));
+            return "fragments/user-form";
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        }
     }
 
-    @PostMapping("/users/save")
-    public String create(@ModelAttribute("user") User user,
-                         @RequestParam(value = "roless") Long[] roles)  {
-        userService.saveUser(user, roles);
-        return "redirect:/admin/users";
+    @PatchMapping()
+    public String updateUser(@Valid @ModelAttribute("user") User user) {
+        userService.edit(user);
+        return "redirect:/admin";
     }
 
-    @GetMapping("/users/edit/{id}")
-    public String editUser(@PathVariable("id") Long id, Model model) {
-        User user = userService.findById(id);
-        model.addAttribute("user", user);
-        List<Role> roles = roleService.findAll();
-        model.addAttribute("allRoles", roles);
-        return "edit";
+    @DeleteMapping("")
+    public String deleteUser(@ModelAttribute("user") User user) {
+        userService.deleteById(user.getId());
+        return "redirect:/admin";
     }
 
-    @PostMapping("/users/update/{id}")
-    public String update(@ModelAttribute("user") User user,
-                         @RequestParam(value = "roless") Long[] roles) {
-        userService.editUser(user, roles);
-        return "redirect:/admin/users";
-    }
+    @PostMapping()
+    public String insertUser(@Valid @ModelAttribute("user") User user) {
+        userService.insertUser(user);
 
-    @GetMapping("/users/delete/{id}")
-    public String delete(@PathVariable("id") Long id) {
-        userService.deleteById(id);
-        return "redirect:/admin/users";
+        return "redirect:/admin";
     }
-
 }
 

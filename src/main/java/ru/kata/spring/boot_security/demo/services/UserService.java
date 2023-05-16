@@ -11,11 +11,13 @@ public interface UserService {
 
     List<User> findAll();
 
-    void saveUser(User user, Long[] roles);
+//    void saveUser(User user, Integer[] roles);
 
     void deleteById(Long id);
 
-    void editUser(User user, Long[] roles);
+//    void editUser(User user, Integer[] roles);
 
+    void edit(User user);
 
+    void insertUser(User user);
 }

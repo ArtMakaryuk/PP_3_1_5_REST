@@ -39,13 +39,13 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    @Transactional
-    @Override
-    public void saveUser(User user, Long[] roles) {
-        addRole(user, roles);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userDao.saveUser(user);
-    }
+//    @Transactional
+//    @Override
+//    public void saveUser(User user, Integer[] roles) {
+//        addRole(user, roles);
+//        user.setPassword(passwordEncoder.encode(user.getPassword()));
+//        userDao.saveUser(user);
+//    }
 
     @Transactional
     @Override
@@ -53,23 +53,39 @@ public class UserServiceImpl implements UserService {
         userDao.deleteById(id);
     }
 
+    //    @Transactional
+//    @Override
+//    public void editUser(User user, Integer[] roles) {
+//        addRole(user, roles);
+//        if (!user.getPassword().equals(findById(user.getId()).getPassword())) {
+//            user.setPassword(passwordEncoder.encode(user.getPassword()));
+//        }
+//        userDao.editUser(user);
+//    }
     @Transactional
     @Override
-    public void editUser(User user, Long[] roles) {
-        addRole(user, roles);
-        if (!user.getPassword().equals(findById(user.getId()).getPassword())) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
+    public void edit(User user) {
+        user.setPassword(user.getPassword().isEmpty() ?
+                findById(user.getId()).getPassword() :
+                passwordEncoder.encode(user.getPassword()));
         userDao.editUser(user);
     }
 
-    private Set<Role> addRole(User user, Long[] roles) {
-        Set<Role> set = new HashSet<>();
-        for (Long role : roles) {
-            set.add(roleService.getById(role));
-        }
-        user.setRoles(set);
-        return set;
+    @Transactional
+    @Override
+    public void insertUser(User user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        userDao.saveUser(user);
     }
+
+
+//    private Set<Role> addRole(User user, Integer[] roles) {
+//        Set<Role> set = new HashSet<>();
+//        for (Integer role : roles) {
+//            set.add(roleService.getById(role));
+//        }
+//        user.setRoles(set);
+//        return set;
+//    }
 
 }
