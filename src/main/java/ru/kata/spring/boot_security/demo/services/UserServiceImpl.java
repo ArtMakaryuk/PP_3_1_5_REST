@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.kata.spring.boot_security.demo.dao.UserDao;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
+import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
 import java.util.HashSet;
 import java.util.List;
@@ -18,24 +19,27 @@ public class UserServiceImpl implements UserService {
 
     private final RoleService roleService;
     private final UserDao userDao;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(RoleService roleService, UserDao userDao, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(RoleService roleService, UserDao userDao, PasswordEncoder passwordEncoder,
+                           UserRepository userRepository) {
         this.roleService = roleService;
         this.userDao = userDao;
         this.passwordEncoder = passwordEncoder;
+        this.userRepository = userRepository;
     }
 
     @Transactional
     @Override
     public User findById(Long id) {
-        return userDao.findById(id);
+        return userRepository.findById(id).orElseThrow();
     }
 
     @Transactional(readOnly = true)
     @Override
     public List<User> findAll() {
-        return userDao.findAll();
+        return userRepository.findAll();
     }
 
 
@@ -50,7 +54,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void deleteById(Long id) {
-        userDao.deleteById(id);
+        userRepository.deleteById(id);
     }
 
     //    @Transactional
@@ -68,14 +72,14 @@ public class UserServiceImpl implements UserService {
         user.setPassword(user.getPassword().isEmpty() ?
                 findById(user.getId()).getPassword() :
                 passwordEncoder.encode(user.getPassword()));
-        userDao.editUser(user);
+        userRepository.save(user);
     }
 
     @Transactional
     @Override
     public void insertUser(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userDao.saveUser(user);
+        userRepository.save(user);
     }
 
 
