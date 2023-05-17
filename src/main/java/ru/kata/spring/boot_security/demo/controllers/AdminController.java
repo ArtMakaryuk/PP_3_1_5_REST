@@ -11,16 +11,13 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.services.RoleService;
 import ru.kata.spring.boot_security.demo.services.UserService;
 
 import javax.validation.Valid;
-import java.util.List;
 
 
 @Controller
@@ -40,7 +37,7 @@ public class AdminController {
     @GetMapping({"", "list"})
     public String displayAllUsers(Model model) {
         model.addAttribute("users", userService.findAll());
-        model.addAttribute("allRoles", roleService.findAll());
+        model.addAttribute("allRoles", roleService.findAllRoles());
 
         model.addAttribute("showUserProfile",
                 model.containsAttribute("user") && !((User) model.getAttribute("user")).isNew());
@@ -56,7 +53,7 @@ public class AdminController {
     @GetMapping("/{id}/profile")
     public String showUserProfileModal(@PathVariable("id") Long userId, Model model) {
         try {
-            model.addAttribute("allRoles", roleService.findAll());
+            model.addAttribute("allRoles", roleService.findAllRoles());
             model.addAttribute("user", userService.findById(userId));
             return "fragments/user-form";
         } catch (IllegalArgumentException e) {
@@ -65,8 +62,10 @@ public class AdminController {
     }
 
     @PatchMapping()
-    public String updateUser(@Valid @ModelAttribute("user") User user) {
-        userService.edit(user);
+    public String updateUser(@Valid @ModelAttribute("user") User user,
+                             BindingResult bindingResult,
+                             RedirectAttributes redirectAttributes) {
+        userService.updateUser(user, bindingResult, redirectAttributes);
         return "redirect:/admin";
     }
 
@@ -77,8 +76,10 @@ public class AdminController {
     }
 
     @PostMapping()
-    public String insertUser(@Valid @ModelAttribute("user") User user) {
-        userService.insertUser(user);
+    public String insertUser(@Valid @ModelAttribute("user") User user,
+                             BindingResult bindingResult,
+                             RedirectAttributes redirectAttributes) {
+        userService.insertUser(user, bindingResult, redirectAttributes);
 
         return "redirect:/admin";
     }

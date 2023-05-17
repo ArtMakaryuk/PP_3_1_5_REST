@@ -11,10 +11,6 @@ import ru.kata.spring.boot_security.demo.model.User;
 @RequestMapping("/user")
 public class UserController {
 
-//    @GetMapping()
-//    public String indexPage() {
-//        return "index";
-//    }
     @GetMapping()
     public String showUserInfo(@CurrentSecurityContext(expression = "authentication.principal") User principal,
                                Model model) {

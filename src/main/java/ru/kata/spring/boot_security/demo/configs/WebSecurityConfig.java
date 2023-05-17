@@ -16,7 +16,7 @@ import ru.kata.spring.boot_security.demo.services.UserDetailsServiceImpl;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-    private final SuccessUserHandler successUserHandler;
+
     private final UserDetailsServiceImpl userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
@@ -32,9 +32,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     // класс, в котором описана логика при отказе в доступе
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
-    public WebSecurityConfig(SuccessUserHandler successUserHandler, UserDetailsServiceImpl userDetailsService,
+    public WebSecurityConfig(UserDetailsServiceImpl userDetailsService,
                              PasswordEncoder passwordEncoder, CustomAuthenticationSuccessHandler authenticationSuccessHandler, CustomAuthenticationFailureHandler authenticationFailureHandler, CustomUrlLogoutSuccessHandler urlLogoutSuccessHandler, CustomAccessDeniedHandler accessDeniedHandler) {
-        this.successUserHandler = successUserHandler;
+
         this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.authenticationSuccessHandler = authenticationSuccessHandler;

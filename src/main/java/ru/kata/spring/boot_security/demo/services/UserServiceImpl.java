@@ -1,31 +1,28 @@
 package ru.kata.spring.boot_security.demo.services;
 
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.kata.spring.boot_security.demo.dao.UserDao;
-import ru.kata.spring.boot_security.demo.model.Role;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
-
 public class UserServiceImpl implements UserService {
 
-    private final RoleService roleService;
-    private final UserDao userDao;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(RoleService roleService, UserDao userDao, PasswordEncoder passwordEncoder,
+    public UserServiceImpl(PasswordEncoder passwordEncoder,
                            UserRepository userRepository) {
-        this.roleService = roleService;
-        this.userDao = userDao;
+
         this.passwordEncoder = passwordEncoder;
         this.userRepository = userRepository;
     }
@@ -42,54 +39,75 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll();
     }
 
-
-//    @Transactional
-//    @Override
-//    public void saveUser(User user, Integer[] roles) {
-//        addRole(user, roles);
-//        user.setPassword(passwordEncoder.encode(user.getPassword()));
-//        userDao.saveUser(user);
-//    }
-
     @Transactional
     @Override
     public void deleteById(Long id) {
         userRepository.deleteById(id);
     }
 
-    //    @Transactional
-//    @Override
-//    public void editUser(User user, Integer[] roles) {
-//        addRole(user, roles);
-//        if (!user.getPassword().equals(findById(user.getId()).getPassword())) {
-//            user.setPassword(passwordEncoder.encode(user.getPassword()));
-//        }
-//        userDao.editUser(user);
-//    }
     @Transactional
     @Override
-    public void edit(User user) {
-        user.setPassword(user.getPassword().isEmpty() ?
-                findById(user.getId()).getPassword() :
-                passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
+    public void updateUser(User user, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
+        bindingResult = checkBindingResultForPasswordField(bindingResult);
+
+        if (!bindingResult.hasErrors()) {
+            String oldPassword = user.getPassword();
+            try {
+                user.setPassword(user.getPassword().isEmpty() ?
+                        findById(user.getId()).getPassword() :
+                        passwordEncoder.encode(user.getPassword()));
+                userRepository.save(user);
+            } catch (DataIntegrityViolationException e) {
+                user.setPassword(oldPassword);
+                addErrorIfDataIntegrityViolationException(bindingResult);
+                addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
+            }
+        } else {
+            addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
+        }
     }
 
     @Transactional
     @Override
-    public void insertUser(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
+    public void insertUser(User user, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
+        if (!bindingResult.hasErrors()) {
+            String oldPassword = user.getPassword();
+            try {
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+                userRepository.save(user);
+            } catch (DataIntegrityViolationException e) {
+                user.setPassword(oldPassword);
+                addErrorIfDataIntegrityViolationException(bindingResult);
+                addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
+            }
+        } else {
+            addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
+        }
     }
 
+    private void addErrorIfDataIntegrityViolationException(BindingResult bindingResult) {
+        bindingResult.addError(new FieldError(bindingResult.getObjectName(),
+                "email", "E-mail must be unique"));
+    }
 
-//    private Set<Role> addRole(User user, Integer[] roles) {
-//        Set<Role> set = new HashSet<>();
-//        for (Integer role : roles) {
-//            set.add(roleService.getById(role));
-//        }
-//        user.setRoles(set);
-//        return set;
-//    }
+    private void addRedirectAttributesIfErrorsExists(User user, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("user", user);
+        redirectAttributes.addFlashAttribute("bindingResult", bindingResult);
+    }
 
+    private BindingResult checkBindingResultForPasswordField(BindingResult bindingResult) {
+        if (!bindingResult.hasFieldErrors()) {
+            return bindingResult;
+        }
+
+        User user = (User) bindingResult.getTarget();
+        BindingResult newBindingResult = new BeanPropertyBindingResult(user, bindingResult.getObjectName());
+        for (FieldError error : bindingResult.getFieldErrors()) {
+            if (!user.isNew() && !error.getField().equals("password")) {
+                newBindingResult.addError(error);
+            }
+        }
+
+        return newBindingResult;
+    }
 }
