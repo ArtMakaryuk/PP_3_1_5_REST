@@ -20,16 +20,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private final UserDetailsServiceImpl userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
-    // класс, в котором описана логика перенаправления пользователей по ролям
     private final CustomAuthenticationSuccessHandler authenticationSuccessHandler;
 
-    // класс, в котором описана логика при неудачной авторизации
     private final CustomAuthenticationFailureHandler authenticationFailureHandler;
 
-    // класс, в котором описана логика при удачной авторизации
     private final CustomUrlLogoutSuccessHandler urlLogoutSuccessHandler;
 
-    // класс, в котором описана логика при отказе в доступе
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
     public WebSecurityConfig(UserDetailsServiceImpl userDetailsService,
@@ -55,11 +51,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .exceptionHandling().accessDeniedHandler(accessDeniedHandler);
         http.formLogin()
-                .loginPage("/") // указываем страницу с формой логина
-                .permitAll()  // даем доступ к форме логина всем
-                .successHandler(authenticationSuccessHandler) //указываем логику обработки при удачном логине
-                .failureHandler(authenticationFailureHandler) //указываем логику обработки при неудачном логине
-                .usernameParameter("email") // Указываем параметры логина и пароля с формы логина
+                .loginPage("/")
+                .permitAll()
+                .successHandler(authenticationSuccessHandler)
+                .failureHandler(authenticationFailureHandler)
+                .usernameParameter("email")
                 .passwordParameter("password");
         http.logout()
                 .logoutUrl("/logout")
