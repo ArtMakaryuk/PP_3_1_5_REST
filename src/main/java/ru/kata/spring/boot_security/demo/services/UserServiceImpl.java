@@ -4,11 +4,11 @@ package ru.kata.spring.boot_security.demo.services;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import ru.kata.spring.boot_security.demo.exception.UserDataIntegrityViolationException;
+import ru.kata.spring.boot_security.demo.exception.UserValidationException;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.repositories.UserRepository;
 
@@ -27,72 +27,63 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
     }
 
-    @Transactional
+
     @Override
     public User findById(Long id) {
         return userRepository.findById(id).orElseThrow();
     }
 
-    @Transactional(readOnly = true)
+
     @Override
     public List<User> findAll() {
         return userRepository.findAll();
     }
 
-    @Transactional
+
     @Override
     public void deleteById(Long id) {
         userRepository.deleteById(id);
     }
 
-    @Transactional
+
     @Override
-    public void updateUser(User user, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
+    public User updateUser(User user, BindingResult bindingResult) {
         bindingResult = checkBindingResultForPasswordField(bindingResult);
 
-        if (!bindingResult.hasErrors()) {
-            String oldPassword = user.getPassword();
-            try {
-                user.setPassword(user.getPassword().isEmpty() ?
-                        findById(user.getId()).getPassword() :
-                        passwordEncoder.encode(user.getPassword()));
-                userRepository.save(user);
-            } catch (DataIntegrityViolationException e) {
-                user.setPassword(oldPassword);
-                addErrorIfDataIntegrityViolationException(bindingResult);
-                addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
-            }
-        } else {
-            addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
+        if (bindingResult.hasErrors()) {
+            throw new UserValidationException(user, bindingResult.getFieldErrors(), "User's fields has errors");
         }
+
+        String oldPassword = user.getPassword();
+        user.setPassword(user.getPassword().isEmpty() ?
+                findById(user.getId()).getPassword() :
+                passwordEncoder.encode(user.getPassword()));
+        try {
+            user = userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            user.setPassword(oldPassword);
+            throw new UserDataIntegrityViolationException(user, e.getMessage());
+        }
+
+        return user;
     }
 
-    @Transactional
     @Override
-    public void insertUser(User user, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
-        if (!bindingResult.hasErrors()) {
-            String oldPassword = user.getPassword();
-            try {
-                user.setPassword(passwordEncoder.encode(user.getPassword()));
-                userRepository.save(user);
-            } catch (DataIntegrityViolationException e) {
-                user.setPassword(oldPassword);
-                addErrorIfDataIntegrityViolationException(bindingResult);
-                addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
-            }
-        } else {
-            addRedirectAttributesIfErrorsExists(user, bindingResult, redirectAttributes);
+    public User insertUser(User user, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new UserValidationException(user, bindingResult.getFieldErrors(), "User's fields has errors");
         }
-    }
 
-    private void addErrorIfDataIntegrityViolationException(BindingResult bindingResult) {
-        bindingResult.addError(new FieldError(bindingResult.getObjectName(),
-                "email", "E-mail must be unique"));
-    }
+        String oldPassword = user.getPassword();
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        try {
+            user = userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            user.setPassword(oldPassword);
+            throw new UserDataIntegrityViolationException(user, e.getMessage());
+        }
 
-    private void addRedirectAttributesIfErrorsExists(User user, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("user", user);
-        redirectAttributes.addFlashAttribute("bindingResult", bindingResult);
+        return user;
     }
 
     private BindingResult checkBindingResultForPasswordField(BindingResult bindingResult) {

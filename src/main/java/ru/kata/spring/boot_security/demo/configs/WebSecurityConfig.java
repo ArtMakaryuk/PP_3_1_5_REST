@@ -1,8 +1,7 @@
 package ru.kata.spring.boot_security.demo.configs;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -29,8 +28,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
     public WebSecurityConfig(UserDetailsServiceImpl userDetailsService,
-                             PasswordEncoder passwordEncoder, CustomAuthenticationSuccessHandler authenticationSuccessHandler, CustomAuthenticationFailureHandler authenticationFailureHandler, CustomUrlLogoutSuccessHandler urlLogoutSuccessHandler, CustomAccessDeniedHandler accessDeniedHandler) {
-
+                             PasswordEncoder passwordEncoder,
+                             CustomAuthenticationSuccessHandler authenticationSuccessHandler,
+                             CustomAuthenticationFailureHandler authenticationFailureHandler,
+                             CustomUrlLogoutSuccessHandler urlLogoutSuccessHandler,
+                             CustomAccessDeniedHandler accessDeniedHandler) {
         this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.authenticationSuccessHandler = authenticationSuccessHandler;
@@ -40,38 +42,33 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder);
+    }
+
+    @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http
-                .csrf().disable()
+        http.csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/", "index", "/css/**", "/js/**", "/webjars/**", "/actuator/**").permitAll()
-                .antMatchers("/admin/**").hasRole("ADMIN")
-                .antMatchers("/user/**").hasAnyRole("ADMIN", "USER")
+                .antMatchers("/", "/img/**", "/css/**", "/js/**", "/webjars/**").permitAll()
+                .antMatchers("/api/users/*", "/api/roles").hasRole("ADMIN")
                 .anyRequest().authenticated()
                 .and()
                 .exceptionHandling().accessDeniedHandler(accessDeniedHandler);
         http.formLogin()
                 .loginPage("/")
                 .permitAll()
+                .loginProcessingUrl("/login")
                 .successHandler(authenticationSuccessHandler)
-                .failureHandler(authenticationFailureHandler)
-                .usernameParameter("email")
-                .passwordParameter("password");
+                .failureHandler(authenticationFailureHandler);
         http.logout()
                 .logoutUrl("/logout")
                 .clearAuthentication(true)
                 .invalidateHttpSession(true)
                 .deleteCookies("JSESSIONID")
-                .logoutSuccessUrl("/?logout")
+                .logoutSuccessUrl("/")
                 .logoutSuccessHandler(urlLogoutSuccessHandler)
-                .permitAll();
-    }
-
-    @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider() {
-        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-        authenticationProvider.setPasswordEncoder(passwordEncoder);
-        authenticationProvider.setUserDetailsService(userDetailsService);
-        return authenticationProvider;
+                .permitAll()
+        ;
     }
 }

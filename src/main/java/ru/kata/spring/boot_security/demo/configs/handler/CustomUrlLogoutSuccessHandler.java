@@ -17,9 +17,8 @@ public class CustomUrlLogoutSuccessHandler extends SimpleUrlLogoutSuccessHandler
                                 HttpServletResponse response,
                                 Authentication authentication) throws IOException, ServletException {
 
-
         if (authentication != null && !(authentication instanceof AnonymousAuthenticationToken)) {
-            request.getSession().setAttribute("Authentication-Name", authentication.getName());
+            request.getSession().setAttribute("authenticatedName", authentication.getName());
         }
 
         super.onLogoutSuccess(request, response, authentication);

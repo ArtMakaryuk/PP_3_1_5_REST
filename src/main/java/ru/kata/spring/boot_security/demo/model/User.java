@@ -154,4 +154,12 @@ public class User extends AbstractEntity<Long> implements UserDetails {
         return String.format("User [id = %d; firstName = %s; lastName = %s; email = %s; password = %s; roles = (%s)]",
                 this.getId(), firstName, lastName, email, password, Collections.singletonList(roles));
     }
+
+    public boolean hasRole(String roleName) {
+        if (null == roles || 0 == roles.size()) {
+            return false;
+        }
+        Optional<Role> findRole = roles.stream().filter(role -> roleName.equals(role.getName())).findFirst();
+        return findRole.isPresent();
+    }
 }
